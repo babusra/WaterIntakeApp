@@ -13,7 +13,7 @@ import {moderateScale} from '../constant/Dimension';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import {urls} from '../API';
-import CustomModal from '../components/CustomButton';
+import CustomModal from '../components/CustomModal';
 
 interface Props {
   navigation?: any;
