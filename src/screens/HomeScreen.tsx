@@ -8,87 +8,158 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
-import * as Progress from 'react-native-progress';
 import {moderateScale} from '../constant/Dimension';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import {urls} from '../API';
 import CustomModal from '../components/CustomModal';
+import {Intake} from '../models/IntakeModel';
+import IntakeList from '../components/IntakeList';
+import CustomCircleChart from '../components/CustomCircleChart';
 
 interface Props {
   navigation?: any;
 }
 
-interface Intake {
-  createdAt: string;
-  amount: number | string;
-  unit: string;
-  id: string;
-}
-
 const HomeScreen = (props: Props) => {
-  const [progress, setProgress] = useState(30);
-  const [newIntake, setNewIntake] = useState<any>(0);
+  const [progress, setProgress] = useState<any>(30);
   const [inputVisible, setInputVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState<Boolean>(false);
+  const [modalVisible2, setModalVisible2] = useState<Boolean>(false);
 
-  const [selectIntake, setSelectIntake] = useState<Intake>({
+  const [selectedIntake, setSelectedIntake] = useState<Intake>({
     amount: 0,
     unit: '',
     id: '',
     createdAt: '',
   });
+  const [newIntake, setNewIntake] = useState<any>(0);
   const [intakes, setIntakes] = useState<Intake[]>([]);
-  const date = new Date().toISOString();
+  const [filteredIntakes, setFilteredIntakes] = useState<any[]>([]);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalVisible2, setModalVisible2] = useState(false);
+  const [dateFilterType, setDateFilterType] = useState<any[]>([
+    {type: 'daily', active: true},
+    {type: 'weekly', active: false},
+    {type: 'monthly', active: false},
+  ]);
 
-  const openModal = (item:Intake) => {
-    setSelectIntake(item);
+  const [goals, setGoals] = useState<any>({
+    dailyGoal: 0,
+    weeklyGoal: 0,
+    monthlyGoal: 0,
+    userId: '1',
+  });
+
+  const [currentGoalType, setCurrentGoalType] = useState<any>();
+  const activeRange = dateFilterType.find(a => a.active).type;
+  const openModal = (item: Intake) => {
+    setSelectedIntake(item);
     setModalVisible(true);
   };
 
-  const openModal2 = () => {
-    setModalVisible2(true);
+  const getIntakes = async () => {
+    axios.get(urls.intake).then(response => {                        //GET intake 
+      setIntakes(prevIntakes => {
+        filterDataByDateType(response.data, activeRange);
+        return response.data;
+      });
+    });
   };
 
   const onSaveIntake = async () => {
     axios
-      .post(urls.getIntake, {
+      .post(urls.intake, {
         amount: parseInt(newIntake),
-        unit: 'ml',
+        unit: 'ml',                                                    //POST intake
         createdAt: new Date().toISOString(),
       })
-      .then(response => console.log(response))
       .finally(() => getIntakes());
 
     setModalVisible2(false);
   };
 
   const onDeleteIntake = async (item: Intake) => {
-    axios.delete(urls.getIntake + `/${item.id}`).finally(() => getIntakes());
+    axios.delete(urls.intake + `/${item.id}`).finally(() => getIntakes());    //DELETE intake
     setModalVisible(false);
   };
 
-  const onUpdateIntake = async (item:Intake) => {
+  const onUpdateIntake = async (item: Intake) => {
     axios
-      .put(urls.getIntake + `/${item.id}`, {
-        amount: parseInt(newIntake),
-        unit: selectIntake.unit,
-        createdAt: selectIntake.createdAt,
+      .put(urls.intake + `/${item.id}`, {
+        amount: parseInt(newIntake),                                    //PUT intake
+        unit: selectedIntake.unit,
+        createdAt: selectedIntake.createdAt,
       })
       .finally(() => getIntakes());
 
     setModalVisible(false);
   };
 
-  const getIntakes = async () => {
-    axios.get(urls.getIntake).then(response => setIntakes(response.data));
+  const getGoals = async () => {
+    await axios.get(urls.goal + `/1`).then(res => {                   //GET goals
+      setGoals(res.data);
+    });
   };
 
+  const currentDate = new Date();        
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(currentDate.getDate() - 1);                   //günlük verileri filtreleyebilmek için
+
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(currentDate.getDate() - 7);                 //haftalık verileri filtreleyebilmek için
+
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(currentDate.getMonth() - 1);              //aylık verileri filtreleyebilmek için
+
+  const filterDataByDateType = (data: Intake[], range: any) => {    // seçilen tarih aralığına göre verileri filtreleyen method
+    switch (range) {
+      case 'daily':
+        const d = data.filter(item => {
+          const createdAt = new Date(item.createdAt);
+          return createdAt >= oneDayAgo && createdAt <= currentDate;
+        });
+        setFilteredIntakes(d);
+        setCurrentGoalType(goals.dailyGoal);
+        break;
+
+      case 'weekly':
+        const w = data.filter(item => {
+          const createdAt = new Date(item.createdAt);
+          return createdAt >= oneWeekAgo && createdAt <= currentDate;
+        });
+        setFilteredIntakes(w);
+        setCurrentGoalType(goals.weeklyGoal);
+
+        break;
+
+      case 'monthly':
+        const m = data.filter(item => {
+          const createdAt = new Date(item.createdAt);
+          return createdAt >= oneMonthAgo && createdAt <= currentDate;
+        });
+        setFilteredIntakes(m);
+        setCurrentGoalType(goals.monthlyGoal);
+
+        break;
+
+      default:
+        return data;
+    }
+  };
+  const sum: number = filteredIntakes.reduce(         // seçilen tarih aralığındaki su verilerinin miktarlarının toplamı 
+    (total, num) => total + num.amount,
+    0,
+  );
+
   useEffect(() => {
+    getGoals();
     getIntakes();
   }, []);
+
+  useEffect(() => {
+    filterDataByDateType(intakes, activeRange);
+    setProgress(((sum * 100) / currentGoalType)?.toFixed(0));
+  }, [intakes, activeRange,currentGoalType]);
 
   return (
     <View style={styles.container}>
@@ -97,32 +168,24 @@ const HomeScreen = (props: Props) => {
         onPress={() => {
           props.navigation.navigate('GoalScreen');
         }}>
-        <Icon size={40} name={'menu'} />
+        <Icon size={40} color={'#67666E'} name={'menu'} />
       </TouchableOpacity>
-      <Progress.Circle
-        style={{alignSelf: 'center'}}
-        progress={progress / 100}
-        size={300}
-        borderWidth={5}
-        borderColor={'#00C9FF'}
-        color={'#00C9FF'}
-        thickness={30}
-        showsText
+      <CustomCircleChart
+        progress={progress}
         formatText={() => {
           return (
             <View>
-              <Text style={{fontSize: 40}}>%{progress}</Text>
+              <Text style={{fontSize: 40, color: '#67666E'}}>%{progress}</Text>
             </View>
           );
         }}
-        allowFontScaling
       />
 
       <View>
         <TouchableOpacity
           style={{alignSelf: 'center', margin: moderateScale(20)}}
-          onPress={openModal2}>
-          <Icon size={55} name={'plus-circle-outline'} />
+          onPress={() => setModalVisible2(true)}>
+          <Icon size={55} color={'#67666E'} name={'plus-circle-outline'} />
         </TouchableOpacity>
 
         <CustomModal
@@ -133,15 +196,7 @@ const HomeScreen = (props: Props) => {
                 {'Tüketilen yeni su miktarı'}
               </Text>
               <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderRadius: 5,
-                  borderColor: 'grey',
-                  height: moderateScale(30),
-                  marginVertical: moderateScale(15),
-                  color: '#000',
-                  padding: moderateScale(5),
-                }}
+                style={styles.input}
                 keyboardType={'number-pad'}
                 onChangeText={(amount: any) => {
                   setNewIntake(amount);
@@ -164,26 +219,34 @@ const HomeScreen = (props: Props) => {
           }
         />
       </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-evenly',
-          marginVertical: moderateScale(20),
-          paddingTop: moderateScale(20),
-          borderTopWidth: 2,
-        }}>
-        <TouchableOpacity>
-          <Icon name={'cup-water'} size={30} style={{alignSelf: 'center'}} />
-          <Text>Günlük</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Icon name={'cup-water'} size={30} style={{alignSelf: 'center'}} />
-          <Text>Haftalık</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Icon name={'cup-water'} size={30} style={{alignSelf: 'center'}} />
-          <Text>Aylık</Text>
-        </TouchableOpacity>
+      <View style={styles.subContainer}>
+        {dateFilterType.map(item => {
+          return (
+            <TouchableOpacity
+              onPress={() => {
+                let temp = [];
+                temp = dateFilterType.slice();
+                temp.map(x => {
+                  if (x.type === item.type) {
+                    x.active = true;
+                  } else {
+                    x.active = false;
+                  }
+                });
+                setDateFilterType(temp);
+              }}>
+              <Icon
+                name={'cup-water'}
+                color={item.active ? '#4488FF' : '#67666E'}
+                size={30}
+                style={{alignSelf: 'center'}}
+              />
+              <Text style={{color: item.active ? '#4488FF' : '#67666E'}}>
+                {item.type}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <CustomModal
@@ -194,15 +257,7 @@ const HomeScreen = (props: Props) => {
 
             {inputVisible ? (
               <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderRadius: 5,
-                  borderColor: 'grey',
-                  height: moderateScale(30),
-                  marginVertical: moderateScale(15),
-                  color: '#000',
-                  padding: moderateScale(5),
-                }}
+                style={styles.input}
                 keyboardType={'number-pad'}
                 onChangeText={(amount: any) => {
                   setNewIntake(amount);
@@ -210,7 +265,7 @@ const HomeScreen = (props: Props) => {
               />
             ) : (
               <Text style={styles.modalMessage}>
-                {selectIntake.amount} {selectIntake.unit}
+                {selectedIntake.amount} {selectedIntake.unit}
               </Text>
             )}
 
@@ -223,8 +278,8 @@ const HomeScreen = (props: Props) => {
                 style={{...styles.closeButton, marginVertical: 5}}
                 onPress={() => {
                   if (inputVisible) {
-                    onUpdateIntake(selectIntake);
-                    setInputVisible(false)
+                    onUpdateIntake(selectedIntake);
+                    setInputVisible(false);
                   } else {
                     setInputVisible(true);
                   }
@@ -235,7 +290,7 @@ const HomeScreen = (props: Props) => {
               {!inputVisible ? (
                 <TouchableOpacity
                   style={{...styles.closeButton, marginVertical: 5}}
-                  onPress={() => onDeleteIntake(selectIntake)}>
+                  onPress={() => onDeleteIntake(selectedIntake)}>
                   <Text style={styles.closeButtonText}>Sil</Text>
                 </TouchableOpacity>
               ) : null}
@@ -243,36 +298,8 @@ const HomeScreen = (props: Props) => {
           </View>
         }
       />
-      <FlatList
-        data={intakes}
-        keyExtractor={item => item.id}
-        ListEmptyComponent={
-          <View>
-            <ActivityIndicator />
-          </View>
-        }
-        renderItem={({item, index}) => {
-          return (
-            <View>
-              <TouchableOpacity
-                style={{
-                  height: moderateScale(40),
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  marginVertical: moderateScale(5),
-                  justifyContent: 'center',
-                }}
-                onLongPress={() =>
-                  openModal(item)
-                }>
-                <Text>
-                  {item.amount} <Text>{item.unit}</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
+
+      <IntakeList data={filteredIntakes} onLongPress={openModal} />
     </View>
   );
 };
@@ -286,7 +313,14 @@ const styles = StyleSheet.create({
     paddingVertical: moderateScale(60),
     paddingHorizontal: moderateScale(15),
   },
-
+  subContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginVertical: moderateScale(20),
+    paddingTop: moderateScale(20),
+    borderTopWidth: 1,
+    borderTopColor: '#67666E',
+  },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -295,24 +329,33 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: moderateScale(10),
   },
   modalMessage: {
     fontSize: 20,
-    paddingVertical: 5,
+    paddingVertical: moderateScale(5),
     textAlign: 'center',
   },
   closeButton: {
-    padding: 10,
+    padding: moderateScale(10),
     backgroundColor: '#FFF',
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#007AFF',
-    marginHorizontal: 10,
+    marginHorizontal: moderateScale(10),
   },
   closeButtonText: {
     color: '#007AFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: 'grey',
+    height: moderateScale(30),
+    marginVertical: moderateScale(15),
+    color: '#000',
+    padding: moderateScale(5),
   },
 });
