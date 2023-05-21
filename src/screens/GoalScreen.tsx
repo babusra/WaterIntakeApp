@@ -51,15 +51,16 @@ const GoalScreen = (props: Props) => {
           justifyContent: 'space-evenly',
           marginVertical: moderateScale(20),
           paddingTop: moderateScale(20),
-          borderTopWidth: 2,
+          borderTopWidth: 1,
+          borderTopColor:'#67666E'
         }}>
         <TextInput
           style={{
             borderWidth: 1,
             width: moderateScale(200),
             height: moderateScale(40),
-            borderRadius: 4,
-            borderColor: '#020202',
+            borderRadius: 8,
+            borderColor: '#67666E',
             padding: moderateScale(7),
           }}
           placeholder={'Hedef girin..'}
@@ -68,9 +69,9 @@ const GoalScreen = (props: Props) => {
 
       <TouchableOpacity
         style={{alignSelf: 'center', margin: moderateScale(20)}}>
-        <Icon size={55} name={'plus-circle'} />
+        <Icon size={55} color={'#67666E'} name={'plus-circle'} />
       </TouchableOpacity>
-      <Text style={{borderWidth:1,padding:moderateScale(8),borderRadius:7}}>
+      <Text style={{borderWidth:1,borderColor:'#67666E',padding:moderateScale(8),borderRadius:7}}>
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
         tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
         veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
