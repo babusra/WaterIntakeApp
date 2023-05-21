@@ -17,11 +17,6 @@ const CustomModal = (props: Props) => {
       >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          {/* <Text style={styles.modalTitle}>{title}</Text>
-          <Text style={styles.modalMessage}>{message}</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity> */}
           {props.children}
         </View>
       </View>
@@ -54,7 +49,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#FFFFFF',
     padding: 20,
-    borderRadius: 5,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent:'center',
     width:'80%',
