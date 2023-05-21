@@ -58,7 +58,8 @@ const HomeScreen = (props: Props) => {
   };
 
   const getIntakes = async () => {
-    axios.get(urls.intake).then(response => {                        //GET intake 
+    axios.get(urls.intake).then(response => {
+      //GET intake
       setIntakes(prevIntakes => {
         filterDataByDateType(response.data, activeRange);
         return response.data;
@@ -70,7 +71,7 @@ const HomeScreen = (props: Props) => {
     axios
       .post(urls.intake, {
         amount: parseInt(newIntake),
-        unit: 'ml',                                                    //POST intake
+        unit: 'ml', //POST intake
         createdAt: new Date().toISOString(),
       })
       .finally(() => getIntakes());
@@ -79,14 +80,14 @@ const HomeScreen = (props: Props) => {
   };
 
   const onDeleteIntake = async (item: Intake) => {
-    axios.delete(urls.intake + `/${item.id}`).finally(() => getIntakes());    //DELETE intake
+    axios.delete(urls.intake + `/${item.id}`).finally(() => getIntakes()); //DELETE intake
     setModalVisible(false);
   };
 
   const onUpdateIntake = async (item: Intake) => {
     axios
       .put(urls.intake + `/${item.id}`, {
-        amount: parseInt(newIntake),                                    //PUT intake
+        amount: parseInt(newIntake), //PUT intake
         unit: selectedIntake.unit,
         createdAt: selectedIntake.createdAt,
       })
@@ -96,22 +97,24 @@ const HomeScreen = (props: Props) => {
   };
 
   const getGoals = async () => {
-    await axios.get(urls.goal + `/1`).then(res => {                   //GET goals
+    await axios.get(urls.goal + `/1`).then(res => {
+      //GET goals
       setGoals(res.data);
     });
   };
 
-  const currentDate = new Date();        
+  const currentDate = new Date();
   const oneDayAgo = new Date();
-  oneDayAgo.setDate(currentDate.getDate() - 1);                   //günlük verileri filtreleyebilmek için
+  oneDayAgo.setDate(currentDate.getDate() - 1); //günlük verileri filtreleyebilmek için
 
   const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(currentDate.getDate() - 7);                 //haftalık verileri filtreleyebilmek için
+  oneWeekAgo.setDate(currentDate.getDate() - 7); //haftalık verileri filtreleyebilmek için
 
   const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(currentDate.getMonth() - 1);              //aylık verileri filtreleyebilmek için
+  oneMonthAgo.setMonth(currentDate.getMonth() - 1); //aylık verileri filtreleyebilmek için
 
-  const filterDataByDateType = (data: Intake[], range: any) => {    // seçilen tarih aralığına göre verileri filtreleyen method
+  const filterDataByDateType = (data: Intake[], range: any) => {
+    // seçilen tarih aralığına göre verileri filtreleyen method
     switch (range) {
       case 'daily':
         const d = data.filter(item => {
@@ -146,7 +149,8 @@ const HomeScreen = (props: Props) => {
         return data;
     }
   };
-  const sum: number = filteredIntakes.reduce(         // seçilen tarih aralığındaki su verilerinin miktarlarının toplamı 
+  const sum: number = filteredIntakes.reduce(
+    // seçilen tarih aralığındaki su verilerinin miktarlarının toplamı
     (total, num) => total + num.amount,
     0,
   );
@@ -158,8 +162,8 @@ const HomeScreen = (props: Props) => {
 
   useEffect(() => {
     filterDataByDateType(intakes, activeRange);
-    setProgress(((sum * 100) / currentGoalType)?.toFixed(0));
-  }, [intakes, activeRange,currentGoalType]);
+    setProgress(parseInt((sum * 100) / currentGoalType));
+  }, [intakes, activeRange, currentGoalType]);
 
   return (
     <View style={styles.container}>
