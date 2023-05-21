@@ -1,6 +1,7 @@
 import {endpoints} from './endpoints';
 
 export const urls = {
-  getIntake: endpoints.getIntake,
+  intake: endpoints.intake,
+  goal:endpoints.goal
 };
 
